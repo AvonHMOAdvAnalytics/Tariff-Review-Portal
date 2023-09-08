@@ -13,9 +13,7 @@ st.set_page_config(page_title= 'Provider Review Portal',page_icon='🏥',layout=
 
 
 #assign the image file to a variable and display it
-image = Image.open('slide3.jpg')
-image1 = Image.open('tariff_portal.png')
-image2 = Image.open('avonwhite.png')
+image = Image.open('tariff_portal_image.png')
 st.image(image, use_column_width=True)
 
 #write queries to import data from the DB and assign to a varaible as below

@@ -7,7 +7,7 @@ import datetime as dt
 from fuzzywuzzy import fuzz
 
 #open the image, assign to a variable and display the variable
-image = Image.open('slide3.jpg')
+image = Image.open('tariff_portal_image.png')
 st.image(image, use_column_width=True)
 
 #initialise the dataframe from session_state and assign to a variable to be used in this page

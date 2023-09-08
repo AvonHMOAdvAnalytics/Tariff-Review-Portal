@@ -11,8 +11,8 @@ import os
 st.set_page_config(page_title= 'Provider Review Portal',page_icon='🏥',layout='wide', initial_sidebar_state='expanded')
 
 #assign the image file to a variable and display it
-image1 = Image.open('slide3.jpg')
-st.image(image1, use_column_width=True)
+image = Image.open('tariff_portal_image.png')
+st.image(image, use_column_width=True)
 
 #query to import data from the DB and assign to a varaible as below
 query = 'select * from [dbo].[tbl_ProviderReferralTariff]'
