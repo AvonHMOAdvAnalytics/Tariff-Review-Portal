@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import pyodbc
 import datetime as dt
+import os
 
 #set page configuration and title
 st.set_page_config(page_title= 'Provider Review Portal',page_icon='🏥',layout='wide', initial_sidebar_state='expanded')
@@ -19,15 +20,19 @@ query = 'select * from [dbo].[tbl_ProviderReferralTariff]'
 #a function to connect to the DB server, run the queries above and retrieve the data
 @st.cache_data(ttl = dt.timedelta(hours=24))
 def get_data_from_sql():
+    server = os.environ.get('server_name')
+    database = os.environ.get('db_name')
+    username = os.environ.get('db_username')
+    password = os.environ.get('password')
     conn = pyodbc.connect(
         'DRIVER={ODBC Driver 17 for SQL Server};SERVER='
-        +st.secrets['server']
+        + server
         +';DATABASE='
-        +st.secrets['database']
+        + database
         +';UID='
-        +st.secrets['username']
+        + username
         +';PWD='
-        +st.secrets['password']
+        + password
         )
     provider_referal = pd.read_sql(query,conn)
     conn.close()
