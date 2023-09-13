@@ -115,7 +115,7 @@ def map_cptcode_service(serv_cat):
     #set of instructions to be executed if a file is uploaded
     if uploaded_file:
         #read the file and assign to a variable
-        df_provider = pd.read_csv(uploaded_file, header=None)
+        df_provider = pd.read_csv(uploaded_file)
 
         #rename the columns based on the preferred_headers disctionary using index
         df_provider.rename(columns=preffered_headers, inplace=True)
@@ -170,7 +170,7 @@ if tariff_format == 'Mapped to CPT Codes':
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
     #read the uploaded tariff into a pandas dataframe and assign to tariff
-        tariff = pd.read_csv(uploaded_file, header=None)
+        tariff = pd.read_csv(uploaded_file)
 
         #rename the columns based on the preferred_headers dictionary using index
         tariff.rename(columns=preffered_headers, inplace=True)
