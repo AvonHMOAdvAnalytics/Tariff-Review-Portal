@@ -48,6 +48,16 @@ def get_data_from_sql():
         +';PWD='
         + password
         )
+    # conn = pyodbc.connect(
+    #     'DRIVER={ODBC Driver 17 for SQL Server};SERVER='
+    #     +st.secrets['server']
+    #     +';DATABASE='
+    #     +st.secrets['database']
+    #     +';UID='
+    #     +st.secrets['username']
+    #     +';PWD='
+    #     +st.secrets['password']
+    #     )
     standard_tariff = pd.read_sql(query, conn)
     provider_tariff = pd.read_sql(query1, conn)
     provider_details = pd.read_sql(query2, conn)
@@ -115,7 +125,7 @@ def map_cptcode_service(serv_cat):
     #set of instructions to be executed if a file is uploaded
     if uploaded_file:
         #read the file and assign to a variable
-        df_provider = pd.read_csv(uploaded_file)
+        df_provider = pd.read_csv(uploaded_file, header=None, skiprows=1)
 
         #rename the columns based on the preferred_headers disctionary using index
         df_provider.rename(columns=preffered_headers, inplace=True)
@@ -170,10 +180,12 @@ if tariff_format == 'Mapped to CPT Codes':
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
     #read the uploaded tariff into a pandas dataframe and assign to tariff
-        tariff = pd.read_csv(uploaded_file)
+        tariff = pd.read_csv(uploaded_file, header=None, skiprows=1)
 
         #rename the columns based on the preferred_headers dictionary using index
         tariff.rename(columns=preffered_headers, inplace=True)
+
+        st.write(tariff)
 
         #merge the provider tariff with the AVON standard tariff on CPTCode
         available_df = pd.merge(tariff, standard_tariff, on=['CPTCode'], how='inner', indicator='Exist')
