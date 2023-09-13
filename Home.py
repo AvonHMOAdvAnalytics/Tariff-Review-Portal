@@ -107,10 +107,18 @@ frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
 #function to perform the mapping of provider services to AVON standard cpt code.
 def map_cptcode_service(serv_cat):
     uploaded_file = st.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs')
+    #create a dictionary to map the uploaded file headers to a preferred name according to their index
+    preffered_headers = {
+        0: 'Description',
+        1: 'Amount'
+    }
     #set of instructions to be executed if a file is uploaded
     if uploaded_file:
         #read the file and assign to a variable
-        df_provider = pd.read_csv(uploaded_file)
+        df_provider = pd.read_csv(uploaded_file, header=None)
+
+        #rename the columns based on the preferred_headers disctionary using index
+        df_provider.rename(columns=preffered_headers, inplace=True)
         #change to a string data type and convert to upper case
         df_provider['Description'] = df_provider['Description'].astype(str)
         df_provider['Description'] = df_provider['Description'].str.upper()
@@ -149,13 +157,23 @@ def map_cptcode_service(serv_cat):
 
 #set of instructions to be executed when 'Mapped to CPT Codes' is selected
 if tariff_format == 'Mapped to CPT Codes':
+    #create a dictionary to map the uploaded file headers to a preferred name according to their index
+    preffered_headers = {
+        0: 'CPTCode',
+        1: 'Description',
+        2: 'Category',
+        3: 'ProviderTariff'
+    }
     #add an uploader that enable users to upload provider tariff in uploadable format
     uploaded_file = st.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here')
 
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
     #read the uploaded tariff into a pandas dataframe and assign to tariff
-        tariff = pd.read_csv(uploaded_file)
+        tariff = pd.read_csv(uploaded_file, header=None)
+
+        #rename the columns based on the preferred_headers dictionary using index
+        tariff.rename(columns=preffered_headers, inplace=True)
 
         #merge the provider tariff with the AVON standard tariff on CPTCode
         available_df = pd.merge(tariff, standard_tariff, on=['CPTCode'], how='inner', indicator='Exist')
