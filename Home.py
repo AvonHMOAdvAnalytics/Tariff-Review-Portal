@@ -185,8 +185,6 @@ if tariff_format == 'Mapped to CPT Codes':
         #rename the columns based on the preferred_headers dictionary using index
         tariff.rename(columns=preffered_headers, inplace=True)
 
-        st.write(tariff)
-
         #merge the provider tariff with the AVON standard tariff on CPTCode
         available_df = pd.merge(tariff, standard_tariff, on=['CPTCode'], how='inner', indicator='Exist')
     
