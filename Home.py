@@ -190,6 +190,7 @@ if tariff_format == 'Mapped to CPT Codes':
     
         #available_df['Exist'] = np.where(available_df.Exist == 'both', True, False)
         #ensure the dataframe only returns records where the ProviderTariff > 0
+        available_df['ProviderTariff'] = pd.to_numeric(available_df['ProviderTariff'], errors='coerce')
         available_df = available_df[available_df['ProviderTariff'] > 0]
         #change the description columns to uppercase
         available_df['Description'] = available_df['Description'].str.upper()
