@@ -164,10 +164,6 @@ def map_cptcode_service(serv_cat):
 #set of instructions to be executed when 'Mapped to CPT Codes' is selected
 if tariff_format == 'Mapped to CPT Codes':
 
-    #include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
-    service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
-    frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
-
     #create a dictionary to map the uploaded file headers to a preferred name according to their index
     preffered_headers = {
         0: 'CPTCode',
@@ -180,6 +176,10 @@ if tariff_format == 'Mapped to CPT Codes':
 
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
+
+        #include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
+        service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
+        frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
     #read the uploaded tariff into a pandas dataframe and assign to tariff
         tariff = pd.read_csv(uploaded_file, header=None, skiprows=1)
 
@@ -336,8 +336,8 @@ if tariff_format == 'Mapped to CPT Codes':
         f"""
         <style>
         .color-box {{
-            background-color: #6E6E70;
-            padding: 10px;
+            background-color: #e3c062;
+            padding: 15px;
             border-radius: 10px;
         }}
         </style>
