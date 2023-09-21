@@ -110,10 +110,6 @@ provider = st.text_input('Type in Provider Name')
 #add a submit button
 st.button("Submit", key="button1", help="This is a button")
 
-#include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
-service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
-frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
-
 #function to perform the mapping of provider services to AVON standard cpt code.
 def map_cptcode_service(serv_cat):
     uploaded_file = st.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs')
@@ -167,6 +163,11 @@ def map_cptcode_service(serv_cat):
 
 #set of instructions to be executed when 'Mapped to CPT Codes' is selected
 if tariff_format == 'Mapped to CPT Codes':
+
+    #include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
+    service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
+    frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
+
     #create a dictionary to map the uploaded file headers to a preferred name according to their index
     preffered_headers = {
         0: 'CPTCode',
