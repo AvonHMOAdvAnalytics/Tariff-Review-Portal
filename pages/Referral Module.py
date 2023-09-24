@@ -42,7 +42,11 @@ referral_df = get_data_from_sql()
 #convert the description column to upper case
 referral_df['StandardDescription'] = referral_df['StandardDescription'].str.upper()
 #filter for only procedures
-referral_df = referral_df[referral_df['ServiceCategory'] == 'Procedure']
+referral_df = referral_df[
+    (referral_df['ServiceCategory'] == 'Procedure') |
+    (referral_df['ServiceCategory'] == 'Service') |
+    (referral_df['ServiceCategory'] == 'Consultation')
+    ]
 #create a list of unique services in the dataframe
 unique_service = referral_df['StandardDescription'].unique()
 #create a sidebar select box to select required service from the unique list of services above
