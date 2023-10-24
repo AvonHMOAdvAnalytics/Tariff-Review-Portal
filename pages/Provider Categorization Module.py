@@ -19,7 +19,7 @@ service_details = st.session_state['service_details']
 #merge the provider_tariff dataframe with provider_details dataframe, rename the cptcode column and select required columns
 merged_provider_tariff = pd.merge(provider_tariff, provider_details, on=['HospNo'], how='inner', indicator='Exist')
 merged_provider_tariff.rename(columns={'cptcode':'CPTCode'}, inplace=True)
-merged_provider_tariff = merged_provider_tariff[['CPTCode', 'CPTDescription', 'Amount', 'ProviderName', 'ProviderClass', 'State']]
+merged_provider_tariff = merged_provider_tariff[['CPTCode', 'CPTDescription', 'Amount', 'ProviderName', 'ProviderClass', 'State', 'ProviderGroup']]
 # merged_provider_tariff['HospNo'] = merged_provider_tariff['HospNo'].astype(str)
 
 #function to calculate the percentage difference between levels.
@@ -31,12 +31,12 @@ def compare_cpt_description(col1,col2):
     return fuzz.ratio(col1, col2)
 
 #columns to merge from the merged_provider_tariff
-cols_to_merge1 = ['CPTCode', 'CPTDescription', 'Amount', 'ProviderName', 'ProviderClass', 'State']
+cols_to_merge1 = ['CPTCode', 'CPTDescription', 'Amount', 'ProviderName', 'ProviderClass', 'State', 'ProviderGroup']
 #columns to merge from the AVON standard tariff dataframe
 cols_to_merge = ['CPTCode','CPTDescription','Category', 'Frequency', 'Level_1', 'Level_2', 'Level_3', 'Level_4', 'Level_5']
 
 # Merge standard_tariff outside the loop
-merged_provider_standard_tariff = pd.merge(merged_provider_tariff[cols_to_merge1], standard_tariff[cols_to_merge], on=['CPTCode'], how='inner', indicator='Exist')
+merged_provider_standard_tariff = pd.merge(merged_provider_tariff[cols_to_merge1], standard_tariff[cols_to_merge], on=['CPTCode'], how='left', indicator='Exist')
 
 
 
@@ -55,13 +55,14 @@ merged_provider_standard_tariff = merged_provider_standard_tariff[
 
 #rename the description columns as below
 merged_provider_standard_tariff.rename(columns = {'CPTDescription_x':'ProviderServiceDesc','CPTDescription_y':'StandardServiceDesc'}, inplace=True)
+
 #ensure the two description columns are changed to upper case
 merged_provider_standard_tariff['ProviderServiceDesc'] = merged_provider_standard_tariff['ProviderServiceDesc'].str.upper()
 merged_provider_standard_tariff['StandardServiceDesc'] = merged_provider_standard_tariff['StandardServiceDesc'].str.upper()
 #create a new column that uses the fuzzy function above to compare the 2 service description and assign a score
 merged_provider_standard_tariff['Match_Score'] = merged_provider_standard_tariff.apply(lambda row: compare_cpt_description(row['ProviderServiceDesc'], row['StandardServiceDesc']), axis=1)
 #select required columns as selected below
-merged_provider_standard_tariff = merged_provider_standard_tariff[['ProviderClass', 'ProviderName', 'Category', 'CPTCode', 'ProviderServiceDesc','StandardServiceDesc',
+merged_provider_standard_tariff = merged_provider_standard_tariff[['ProviderClass', 'ProviderName', 'ProviderGroup', 'Category', 'CPTCode', 'ProviderServiceDesc','StandardServiceDesc',
                                                                         'Match_Score','Frequency', 'Amount', 'Level_1', 'Level_2', 'Level_3', 'Level_4', 'Level_5',
                                                                           'Tariff-L1%', 'Tariff-L2%', 'Tariff-L3%', 'Tariff-L4%', 'Tariff-L5%']]
 
@@ -103,10 +104,51 @@ def aggregate_provider_tariff(providercategory, tariff_level):
     combined_df = pd.merge(combined_df, df_L4_cond2, on='ProviderName')
     combined_df = pd.merge(combined_df, df_L5_cond1, on='ProviderName')
     combined_df = pd.merge(combined_df, df_L5_cond2, on='ProviderName')
-
-    # Handle null values in combined_df
+# Handle null values in combined_df
     combined_df = combined_df.fillna(0)
-    
+
+
+# def aggregate_provider_tariff_gp(providercategory, tariff_level):
+# # Filter merged_provider_standard_tariff by based on the selected provider category
+#     combined_data = merged_provider_standard_tariff[merged_provider_standard_tariff['ProviderGroup'] == providercategory].copy()
+#     #add a new column that calculates the %variance of the provider tariff using the percent_change function from the selected tariff_level
+#     combined_data['Variance'] = round(percent_change(combined_data['Amount'], combined_data[tariff_level]), 2)
+
+
+#     # Group  the combined data by 'ProviderName'
+#     grouped_data = combined_data.groupby(['ProviderName'])
+#     #calculate the average variance of each provider based on the service frequency with 5 and 4 which are termed as high frequency services using the lambda function
+#     df_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Variance'].mean(), 2)).reset_index(name='High_Frequency_Ave')
+#     df_L1_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Tariff-L1%'].mean(), 2)).reset_index(name='L1_cond1_ave')
+#     df_L2_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Tariff-L2%'].mean(), 2)).reset_index(name='L2_cond1_ave')
+#     df_L3_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Tariff-L3%'].mean(), 2)).reset_index(name='L3_cond1_ave')
+#     df_L4_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Tariff-L4%'].mean(), 2)).reset_index(name='L4_cond1_ave')
+#     df_L5_cond1 = grouped_data.apply(lambda x: round(x[x['Frequency'].isin([5, 4])]['Tariff-L5%'].mean(), 2)).reset_index(name='L5_cond1_ave')
+
+#     ##calculate the average variance of each provider based on the service frequency with 3 which are termed as mid frequency services using the lambda function
+#     df_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Variance'].mean(), 2)).reset_index(name='Mid_Frequency_Ave')
+#     df_L1_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Tariff-L1%'].mean(), 2)).reset_index(name='L1_cond2_ave')
+#     df_L2_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Tariff-L2%'].mean(), 2)).reset_index(name='L2_cond2_ave')
+#     df_L3_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Tariff-L3%'].mean(), 2)).reset_index(name='L3_cond2_ave')
+#     df_L4_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Tariff-L4%'].mean(), 2)).reset_index(name='L4_cond2_ave')
+#     df_L5_cond2 = grouped_data.apply(lambda x: round(x[x['Frequency'] == 3]['Tariff-L5%'].mean(), 2)).reset_index(name='L5_cond2_ave')
+
+#     #Merge all the dataframes above containing the average %variance of each provider from the 5 different tariff levels based on the 2 different conditions
+#     combined_df = pd.merge(df_cond1, df_cond2, on='ProviderName')
+#     combined_df = pd.merge(combined_df,df_L1_cond1, on= 'ProviderName')
+#     combined_df = pd.merge(combined_df, df_L1_cond2, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L2_cond1, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L2_cond2, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L3_cond1, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L3_cond2, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L4_cond1, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L4_cond2, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L5_cond1, on='ProviderName')
+#     combined_df = pd.merge(combined_df, df_L5_cond2, on='ProviderName')
+
+#     # Handle null values in combined_df
+#     combined_df = combined_df.fillna(0)
+
     # function that makes the recommendation for each provider based on the defined logic in the conditional statement below
     def calculate_rec(row):
         if row['L1_cond1_ave'] <= 7.5 and row['L1_cond2_ave'] <= 15:
@@ -194,6 +236,8 @@ e_prestige_providers_df['TOSHFA Level'] = 'INTERNATIONAL'
 #combine all the providers in the different categories above to get a list with all the providers
 all_providers_df = pd.concat([basic_providers_df,plus_providers_df,premium_providers_df,prestige_providers_df,e_prestige_providers_df], axis=0)
 all_providers_df = all_providers_df[['ProviderName', 'TOSHFA Level', 'Recommendation']]
+# optical_providers_df = aggregate_provider_tariff_gp('Dental', 'Level_1')
+# optical_providers_df['TOSHFA Level'] = 'BASIC'
 
 #this function adds a filter to the sidebar to enable us filter the final displayed categorisation by the model based on their recommended tariff level
 def display_data(df):

@@ -27,7 +27,8 @@ query2 = 'select Code HospNo,\
         City,\
         PhoneNo,\
         Email,\
-        ProviderManager\
+        ProviderManager,\
+        ProviderGroup\
         from [dbo].[tbl_ProviderList_stg]'
 query3 = 'select * from [dbo].[tbl_CPTCodeMaster]'
 
@@ -73,6 +74,7 @@ st.title('Provider Tariff Review')
 service_details['StandardDescription'] = service_details['StandardDescription'].str.upper()
 service_details['ServiceType'] = service_details['ServiceType'].str.upper()
 service_details['CPTCode'] = service_details['CPTCode'].str.upper()
+standard_tariff['CPTCode'] = standard_tariff['CPTCode'].str.upper()
 
 #store the data in a session state to enable us reference the data from another file
 st.session_state['standard_tariff'] = standard_tariff
@@ -186,13 +188,18 @@ if tariff_format == 'Mapped to CPT Codes':
         #rename the columns based on the preferred_headers dictionary using index
         tariff.rename(columns=preffered_headers, inplace=True)
 
+        #enforce the CPTCode columns to str
+        tariff['CPTCode'] = tariff['CPTCode'].str.upper()
+
         #merge the provider tariff with the AVON standard tariff on CPTCode
         available_df = pd.merge(tariff, standard_tariff, on=['CPTCode'], how='inner', indicator='Exist')
+
     
         #available_df['Exist'] = np.where(available_df.Exist == 'both', True, False)
         #ensure the dataframe only returns records where the ProviderTariff > 0
         available_df['ProviderTariff'] = pd.to_numeric(available_df['ProviderTariff'], errors='coerce')
         available_df = available_df[available_df['ProviderTariff'] > 0]
+        
         #change the description columns to uppercase
         available_df['Description'] = available_df['Description'].str.upper()
         available_df['CPTDescription'] = available_df['CPTDescription'].str.upper()
