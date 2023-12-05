@@ -114,7 +114,7 @@ st.button("Submit", key="button1", help="This is a button")
 
 #function to perform the mapping of provider services to AVON standard cpt code.
 def map_cptcode_service(serv_cat):
-    uploaded_file = st.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs')
+    uploaded_file = st.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs', type='csv')
     #create a dictionary to map the uploaded file headers to a preferred name according to their index
     preffered_headers = {
         0: 'Description',
@@ -174,7 +174,7 @@ if tariff_format == 'Mapped to CPT Codes':
         3: 'ProviderTariff'
     }
     #add an uploader that enable users to upload provider tariff in uploadable format
-    uploaded_file = st.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here')
+    uploaded_file = st.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here', type='csv')
 
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
