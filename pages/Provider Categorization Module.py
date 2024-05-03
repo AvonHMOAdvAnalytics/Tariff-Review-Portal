@@ -39,7 +39,6 @@ cols_to_merge = ['CPTCode','CPTDescription','Category', 'Frequency', 'Level_1', 
 merged_provider_standard_tariff = pd.merge(merged_provider_tariff[cols_to_merge1], standard_tariff[cols_to_merge], on=['CPTCode'], how='left', indicator='Exist')
 
 
-
 # Calculate %Variance of each service tariff from the 5 different levels and add as columns to the df
 merged_provider_standard_tariff['Tariff-L1%'] = round(percent_change(merged_provider_standard_tariff['Amount'], merged_provider_standard_tariff['Level_1']), 2)
 merged_provider_standard_tariff['Tariff-L2%'] = round(percent_change(merged_provider_standard_tariff['Amount'], merged_provider_standard_tariff['Level_2']), 2)
@@ -223,16 +222,16 @@ def calculate_rec(df):
         return table_df, rec6
 
 #apply the aggregate_provider_tariff function above to each category of providers and create a new column in the returned dataframe to indicate the provider category on TOSHFA
-basic_providers_df = aggregate_provider_tariff('BASIC', 'Level_1')
+basic_providers_df = aggregate_provider_tariff('LEVEL 1', 'Level_1')
 basic_providers_df['TOSHFA Level'] = 'BASIC'
-plus_providers_df = aggregate_provider_tariff('PLUS', 'Level_2')
+plus_providers_df = aggregate_provider_tariff('LEVEL 2', 'Level_2')
 plus_providers_df['TOSHFA Level'] = 'PLUS'
-premium_providers_df = aggregate_provider_tariff('PREMIUM', 'Level_3')
+premium_providers_df = aggregate_provider_tariff('LEVEL 3', 'Level_3')
 premium_providers_df['TOSHFA Level'] = 'PREMIUM'
-prestige_providers_df = aggregate_provider_tariff('PRESTIGE', 'Level_4')
+prestige_providers_df = aggregate_provider_tariff('LEVEL 4', 'Level_4')
 prestige_providers_df['TOSHFA Level'] = 'PRESTIGE'
-e_prestige_providers_df = aggregate_provider_tariff('INTERNATIONAL', 'Level_5')
-e_prestige_providers_df['TOSHFA Level'] = 'INTERNATIONAL'
+e_prestige_providers_df = aggregate_provider_tariff('LEVEL 5', 'Level_5')
+e_prestige_providers_df['TOSHFA Level'] = 'EXECUTIVE PRESTIGE'
 #combine all the providers in the different categories above to get a list with all the providers
 all_providers_df = pd.concat([basic_providers_df,plus_providers_df,premium_providers_df,prestige_providers_df,e_prestige_providers_df], axis=0)
 all_providers_df = all_providers_df[['ProviderName', 'TOSHFA Level', 'Recommendation']]
@@ -348,7 +347,7 @@ elif select_task == 'Check Provider Classification':
     if provider_class == 'BASIC':
         provider_df = display_data(basic_providers_df)
         level_agg = provider_df.groupby('Recommendation').agg(ProviderCount = ('Recommendation','count')).reset_index().sort_values(by='Recommendation', ascending=False)
-        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'BASIC', 'ProviderName'].unique()
+        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'LEVEL 1', 'ProviderName'].unique()
         provider = st.sidebar.selectbox(label= 'Select Provider', options=unique_providers)
         st.subheader('Summary of Recommended Level and Count of Providers')
         st.dataframe(level_agg)
@@ -370,7 +369,7 @@ elif select_task == 'Check Provider Classification':
     elif provider_class == 'PLUS':
         provider_df = display_data(plus_providers_df)
         level_agg = provider_df.groupby('Recommendation').agg(ProviderCount = ('Recommendation','count')).reset_index().sort_values(by='Recommendation', ascending=False)
-        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'PLUS', 'ProviderName'].unique()
+        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'LEVEL 2', 'ProviderName'].unique()
         provider = st.sidebar.selectbox(label= 'Select Provider', options=unique_providers)
         st.subheader('Summary of Recommended Level and Count of Providers')
         st.dataframe(level_agg)
@@ -393,7 +392,7 @@ elif select_task == 'Check Provider Classification':
     elif provider_class == 'PREMIUM':
         provider_df = display_data(premium_providers_df)
         level_agg = provider_df.groupby('Recommendation').agg(ProviderCount = ('Recommendation','count')).reset_index().sort_values(by='Recommendation', ascending=False)
-        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'PREMIUM', 'ProviderName'].unique()
+        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'LEVEL 3', 'ProviderName'].unique()
         provider = st.sidebar.selectbox(label= 'Select Provider', options=unique_providers)
         st.subheader('Summary of Recommended Level and Count of Providers')
         st.dataframe(level_agg)
@@ -415,7 +414,7 @@ elif select_task == 'Check Provider Classification':
     elif provider_class == 'PRESTIGE':
         provider_df = display_data(prestige_providers_df)
         level_agg = provider_df.groupby('Recommendation').agg(ProviderCount = ('Recommendation','count')).reset_index().sort_values(by='Recommendation', ascending=False)
-        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'PRESTIGE', 'ProviderName'].unique()
+        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'LEVEL 4', 'ProviderName'].unique()
         provider = st.sidebar.selectbox(label= 'Select Provider', options=unique_providers)
         st.subheader('Summary of Recommended Level and Count of Providers')
         st.dataframe(level_agg)
@@ -439,11 +438,11 @@ elif select_task == 'Check Provider Classification':
     elif provider_class == 'EXECUTIVE PRESTIGE':
         provider_df = display_data(e_prestige_providers_df)
         level_agg = provider_df.groupby('Recommendation').agg(ProviderCount = ('Recommendation','count')).reset_index().sort_values(by='Recommendation', ascending=False)
-        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'INTERNATIONAL', 'ProviderName'].unique()
+        unique_providers = merged_provider_standard_tariff.loc[merged_provider_standard_tariff['ProviderClass'] == 'LEVEL 5', 'ProviderName'].unique()
         provider = st.sidebar.selectbox(label= 'Select Provider', options=unique_providers)
         st.subheader('Summary of Recommended Level and Count of Providers')
         st.dataframe(level_agg)
-        st.subheader('Recommended Tariff Level for INTERNATIONAL Providers')
+        st.subheader('Recommended Tariff Level for EXECUTIVE PRESTIGE Providers')
         st.dataframe(provider_df)
 
         selected_provider_df = merged_provider_standard_tariff[merged_provider_standard_tariff['ProviderName'] == provider].reset_index(drop=True)
