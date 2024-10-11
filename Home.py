@@ -235,11 +235,21 @@ if tariff_format == 'Mapped to CPT Codes':
 
         #function to calculate the average variance of the provider from the different standard tariff level based on the service frequency
         def calc_ave_var(lev_var, freq):
-            ave_for_rec = round(available_df[
-                (available_df['Category'].isin(cat_for_rec)) &
+            # Filter the DataFrame based on the conditions
+            filtered_df = available_df[
+                (available_df['Category'].isin(cat_for_rec)) & 
                 (available_df['Frequency'].isin(freq))
-                ][lev_var].mean(),2)
-            return ave_for_rec
+            ]
+            
+            # Check if the filtered DataFrame is empty
+            if filtered_df.empty:
+                return 0
+            
+            # Calculate the mean
+            ave_for_rec = filtered_df[lev_var].mean()
+            
+            # Return the rounded mean or 0 if ave_for_rec is None
+            return round(ave_for_rec, 2) if ave_for_rec is not None else 0
 
         #applying the function above to calculate the average tariff variance for high frequency services(5 and 4)
         freq1 = [5,4]  
