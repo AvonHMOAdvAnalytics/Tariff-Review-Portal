@@ -17,8 +17,9 @@ image = Image.open('tariff_portal_image.png')
 st.image(image, use_column_width=True)
 
 #write queries to import data from the DB and assign to a varaible as below
-query = 'select * from [dbo].[tbl_AvonRevisedProposedStandardTariff]'
-query1 = 'select * from [dbo].[tbl_CurrentProviderTariff]'
+# query = 'select * from [dbo].[tbl_AvonRevisedProposedStandardTariff]'
+query1 = "select * from [dbo].[tbl_CurrentProviderTariff]\
+            where cptcode not like 'NHIS%'"
 query2 = 'select Code HospNo,\
         Name ProviderName,\
         ProviderClass,\
@@ -31,6 +32,7 @@ query2 = 'select Code HospNo,\
         ProviderGroup\
         from [dbo].[tbl_ProviderList_stg]'
 query3 = 'select * from [dbo].[tbl_CPTCodeMaster]'
+query4 = 'select * from [dbo].[Adjusted_Proposed_Standard_Tariff]'
 
 #a function to connect to the DB server, run the queries above and retrieve the data
 @st.cache_data(ttl = dt.timedelta(hours=24))
@@ -59,28 +61,32 @@ def get_data_from_sql():
     #     +';PWD='
     #     +st.secrets['password']
     #     )
-    standard_tariff = pd.read_sql(query, conn)
+    # standard_tariff = pd.read_sql(query, conn)
     provider_tariff = pd.read_sql(query1, conn)
     provider_details = pd.read_sql(query2, conn)
     service_details = pd.read_sql(query3,conn)
+    new_tariff = pd.read_sql(query4, conn)
     conn.close()
-    return standard_tariff, provider_tariff, provider_details, service_details
+    return provider_tariff, provider_details, service_details, new_tariff
 
 #apply the function above and assign the imported data to variables
-standard_tariff, provider_tariff, provider_details, service_details = get_data_from_sql()
+provider_tariff, provider_details, service_details,new_tariff = get_data_from_sql()
 #dispay a title on the page
-st.title('Provider Tariff Review')
+# st.title('Provider Tariff Review')
 #ensure all the columns below are converted to upper case
 service_details['StandardDescription'] = service_details['StandardDescription'].str.upper()
 service_details['ServiceType'] = service_details['ServiceType'].str.upper()
 service_details['CPTCode'] = service_details['CPTCode'].str.upper()
-standard_tariff['CPTCode'] = standard_tariff['CPTCode'].str.upper()
+# standard_tariff['CPTCode'] = standard_tariff['CPTCode'].str.upper()
+new_tariff['CPTCode'] = new_tariff['CPTCODE'].str.upper()
+
 
 #store the data in a session state to enable us reference the data from another file
-st.session_state['standard_tariff'] = standard_tariff
+# st.session_state['standard_tariff'] = standard_tariff
 st.session_state['provider_tariff'] = provider_tariff
 st.session_state['provider_details'] = provider_details
 st.session_state['service_details'] = service_details
+st.session_state['new_tariff'] = new_tariff
 
 #add a selectbox on the sidebar to enable users select the provider tariff category
 tariff_format = st.sidebar.selectbox('Select Provider Tariff Category', options=['Mapped to CPT Codes', 'Not Mapped to CPT Codes'])
@@ -108,13 +114,18 @@ def fuzzy_match(description, choices):
             return best_match, score
 
 #Include an input box that takes in the provider name
-provider = st.text_input('Type in Provider Name')
+provider = st.sidebar.text_input('Type in Provider Name')
+location = st.sidebar.selectbox('Provider Location', placeholder='Select Location', index=None,
+                         options=['Abia', 'Abuja', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River',
+                                   'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
+                                    'Kebbi', 'Kogi', 'Kwara','Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+                                    'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'])
 #add a submit button
-st.button("Submit", key="button1", help="This is a button")
+# st.sidebar.button("Submit", key="button1", help="This is a button")
 
 #function to perform the mapping of provider services to AVON standard cpt code.
 def map_cptcode_service(serv_cat):
-    uploaded_file = st.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs', type='csv')
+    uploaded_file = st.sidebar.file_uploader('Upload a CSV file containing Provider Service Description and Tariffs', type='csv')
     #create a dictionary to map the uploaded file headers to a preferred name according to their index
     preffered_headers = {
         0: 'Description',
@@ -174,14 +185,14 @@ if tariff_format == 'Mapped to CPT Codes':
         3: 'ProviderTariff'
     }
     #add an uploader that enable users to upload provider tariff in uploadable format
-    uploaded_file = st.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here', type='csv')
+    uploaded_file = st.sidebar.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here', type='csv')
 
     #set of instructions to be executed when a file is uploaded
     if uploaded_file:
 
         #include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
-        service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
-        frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
+        # service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
+        # frequency = st.sidebar.multiselect('Select Service Frequency', [5, 4, 3, 2, 1])
     #read the uploaded tariff into a pandas dataframe and assign to tariff
         tariff = pd.read_csv(uploaded_file, header=None, skiprows=1)
 
@@ -192,7 +203,7 @@ if tariff_format == 'Mapped to CPT Codes':
         tariff['CPTCode'] = tariff['CPTCode'].str.upper()
 
         #merge the provider tariff with the AVON standard tariff on CPTCode
-        available_df = pd.merge(tariff, standard_tariff, on=['CPTCode'], how='inner', indicator='Exist')
+        available_df = pd.merge(tariff, new_tariff, on=['CPTCode'], how='inner', indicator='Exist')
 
     
         #available_df['Exist'] = np.where(available_df.Exist == 'both', True, False)
@@ -202,28 +213,36 @@ if tariff_format == 'Mapped to CPT Codes':
         
         #change the description columns to uppercase
         available_df['Description'] = available_df['Description'].str.upper()
-        available_df['CPTDescription'] = available_df['CPTDescription'].str.upper()
+        available_df['CPTDESCRIPTION'] = available_df['CPTDESCRIPTION'].str.upper()
         #apply the first fuzzy function that compares the description columns and assign a score based on their compatibility to create a new column
-        available_df['Match_Score'] = available_df.apply(lambda row: compare_cpt_description(row['Description'], row['CPTDescription']), axis=1)
+        available_df['Match_Score'] = available_df.apply(lambda row: compare_cpt_description(row['Description'], row['CPTDESCRIPTION']), axis=1)
         #rename certain columns as below
-        available_df.rename(columns={'Description':'ProviderDescription', 'CPTDescription':'StandardDescription','Category_y':'Category'}, inplace=True)
+        available_df.rename(columns={'Description':'ProviderDescription', 'CPTDESCRIPTION':'StandardDescription','Category_y':'Category'}, inplace=True)
         #return certain columns as selected below
         available = available_df[['CPTCode','Category','ProviderDescription', 'StandardDescription','ProviderTariff','Match_Score']]
         
-        #write a condition that compares the tariff provider of each service and the criteria for moving or staying on a particular level
-        conditions = [(available_df['ProviderTariff'] < available_df['Level_1']),
-                    (available_df['ProviderTariff'] >= available_df['Level_1']) & (available_df['ProviderTariff'] < available_df['Level_2']),
-                    (available_df['ProviderTariff'] >= available_df['Level_2']) & (available_df['ProviderTariff'] < available_df['Level_3']),
-                    (available_df['ProviderTariff'] >= available_df['Level_3']) & (available_df['ProviderTariff'] < available_df['Level_4']),
-                    (available_df['ProviderTariff'] >= available_df['Level_4']) & (available_df['ProviderTariff'] < available_df['Level_5']),
-                    (available_df['ProviderTariff'] == available_df['Level_5'])
-                    ]
-        #assign the corresponding choices based on the conditions above
-        choices = ['Below Level 1', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
-        #apply conditions and choices above to create a new column that contains the Tariff level for each service
-        available_df['TariffLevel'] = np.select(conditions, choices, default='Above Level 5')
+        #write a function that compares the tariff provider of each service and the criteria for moving or staying on a particular level
+        #create a new column that assigns the tariff level based on the provider tariff for each service in available_df
+        available_df['TariffLevel'] = np.where(available_df['ProviderTariff'] <= available_df['Level_1']*1.15, 'LEVEL 1',
+                                                np.where(available_df['ProviderTariff'] <= available_df['Level_2']*1.15, 'LEVEL 2',
+                                                np.where(available_df['ProviderTariff'] <= available_df['Level_3']*1.15, 'LEVEL 3',
+                                                np.where(available_df['ProviderTariff'] <= available_df['Level_4']*1.15, 'LEVEL 4',
+                                                np.where(available_df['ProviderTariff'] <= available_df['Level_5']*2, 'LEVEL 5', 'BUPA LEVEL')))))
+        
 
-        #create new columns by applying the percent_change function to get the provider tariff varaince from each standard tariff level
+        # conditions = [(available_df['ProviderTariff'] < available_df['Level_1']),
+        #             (available_df['ProviderTariff'] >= available_df['Level_1']) & (available_df['ProviderTariff'] < available_df['Level_2'] * 1.15),
+        #             (available_df['ProviderTariff'] >= available_df['Level_2']) & (available_df['ProviderTariff'] < available_df['Level_3']),
+        #             (available_df['ProviderTariff'] >= available_df['Level_3']) & (available_df['ProviderTariff'] < available_df['Level_4']),
+        #             (available_df['ProviderTariff'] >= available_df['Level_4']) & (available_df['ProviderTariff'] < available_df['Level_5']),
+        #             (available_df['ProviderTariff'] == available_df['Level_5'])
+        #             ]
+        # #assign the corresponding choices based on the conditions above
+        # choices = ['Below Level 1', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+        # #apply conditions and choices above to create a new column that contains the Tariff level for each service
+        # available_df['TariffLevel'] = np.select(conditions, choices, default='Above Level 5')
+
+        #create new columns by applying the percent_change function to get the provider tariff variance from each standard tariff level
         available_df['Tariff-L1(%)'] = round(percent_change(available_df['ProviderTariff'], available_df['Level_1']),2)
         available_df['Tariff-L2(%)'] = round(percent_change(available_df['ProviderTariff'], available_df['Level_2']),2)
         available_df['Tariff-L3(%)'] = round(percent_change(available_df['ProviderTariff'], available_df['Level_3']),2)
@@ -234,86 +253,63 @@ if tariff_format == 'Mapped to CPT Codes':
         cat_for_rec = ['CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING']
 
         #function to calculate the average variance of the provider from the different standard tariff level based on the service frequency
-        def calc_ave_var(lev_var, freq):
-            # Filter the DataFrame based on the conditions
-            filtered_df = available_df[
-                (available_df['Category'].isin(cat_for_rec)) & 
-                (available_df['Frequency'].isin(freq))
-            ]
-            
-            # Check if the filtered DataFrame is empty
-            if filtered_df.empty:
+        def calc_ave_var(lev_var):
+            if available_df.empty:
                 return 0
             
             # Calculate the mean
-            ave_for_rec = filtered_df[lev_var].mean()
+            ave_for_rec = available_df[lev_var].mean()
             
             # Return the rounded mean or 0 if ave_for_rec is None
             return round(ave_for_rec, 2) if ave_for_rec is not None else 0
 
-        #applying the function above to calculate the average tariff variance for high frequency services(5 and 4)
-        freq1 = [5,4]  
-        ave_for_rec_L1_cond1 = calc_ave_var('Tariff-L1(%)', freq1)
-        ave_for_rec_L2_cond1 = calc_ave_var('Tariff-L2(%)', freq1)
-        ave_for_rec_L3_cond1 = calc_ave_var('Tariff-L3(%)', freq1)
-        ave_for_rec_L4_cond1 = calc_ave_var('Tariff-L4(%)', freq1)
-        ave_for_rec_L5_cond1 = calc_ave_var('Tariff-L5(%)', freq1)
-        #applying the function above to calculate the average tariff variance for high frequency services 3
-        freq2 = [3]
-        ave_for_rec_L1_cond2 = calc_ave_var('Tariff-L1(%)', freq2)
-        ave_for_rec_L2_cond2 = calc_ave_var('Tariff-L2(%)', freq2)
-        ave_for_rec_L3_cond2 = calc_ave_var('Tariff-L3(%)', freq2)
-        ave_for_rec_L4_cond2 = calc_ave_var('Tariff-L4(%)', freq2)
-        ave_for_rec_L5_cond2 = calc_ave_var('Tariff-L5(%)', freq2)
+        ave_for_rec_L1 = calc_ave_var('Tariff-L1(%)')
+        ave_for_rec_L2 = calc_ave_var('Tariff-L2(%)')
+        ave_for_rec_L3 = calc_ave_var('Tariff-L3(%)')
+        ave_for_rec_L4 = calc_ave_var('Tariff-L4(%)')
+        ave_for_rec_L5 = calc_ave_var('Tariff-L5(%)')
 
-        #write all the possible recommendations based on the results above and assign each recommendation to a variable
-        rec1 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L1_cond1}% and {ave_for_rec_L1_cond2}% from Standard LEVEL 1 Tariff respectively and is hereby recommended to TARIFF LEVEL 1'
-        rec2 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L2_cond1}% and {ave_for_rec_L2_cond2}% from Standard LEVEL 2 Tariff respectively and is hereby recommended to TARIFF LEVEL 2'
-        rec3 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L3_cond1}% and {ave_for_rec_L3_cond2}% from Standard LEVEL 3 Tariff respectively and is hereby recommended to TARIFF LEVEL 3'
-        rec4 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L4_cond1}% and {ave_for_rec_L4_cond2}% from Standard LEVEL 4 Tariff respectively and is hereby recommended to TARIFF LEVEL 4'
-        rec5 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L5_cond1}% and {ave_for_rec_L5_cond2}% from Standard LEVEL 5 Tariff respectively and is hereby recommended to TARIFF LEVEL 5'
-        rec6 = f'The Service Tariff of {provider} for high frequency and mid frequency services has a variance of {ave_for_rec_L5_cond1}% and {ave_for_rec_L5_cond2}% from Standard LEVEL 5 Tariff respectively and is hereby recommended to BUPA LEVEL'
+        # #write all the possible recommendations based on the results above and assign each recommendation to a variable
+        rec1 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L1}% from Standard LEVEL 1 Tariff and is hereby recommended to TARIFF LEVEL 1'
+        rec2 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L2}% from Standard LEVEL 2 Tariff and is hereby recommended to TARIFF LEVEL 2'
+        rec3 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L3}% from Standard LEVEL 3 Tariff and is hereby recommended to TARIFF LEVEL 3'
+        rec4 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L4}% from Standard LEVEL 4 Tariff and is hereby recommended to TARIFF LEVEL 4'
+        rec5 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L5}% from Standard LEVEL 5 Tariff and is hereby recommended to TARIFF LEVEL 5'
+        rec6 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L5}% from Standard LEVEL 5 Tariff and is hereby recommended to BUPA LEVEL'
         
+
         #a function to assign a recommendation to the uploaded provider based on our logic and return the recommendation.
         def check_recommendation():
-            if ave_for_rec_L1_cond1 <= 7.5 and ave_for_rec_L1_cond2 <= 15:
-                return rec1
-            
-            if ave_for_rec_L2_cond1 <= 7.5 and ave_for_rec_L2_cond2 <= 15:
-                return rec2
-            
-            if ave_for_rec_L3_cond1 <= 7.5 and ave_for_rec_L3_cond2 <= 15:
-                return rec3
-            
-            if ave_for_rec_L4_cond1 <= 7.5 and ave_for_rec_L4_cond2 <= 15:
-                return rec4
-            
-            if ave_for_rec_L5_cond1 <= 100 and ave_for_rec_L5_cond2 <= 100:
-                return rec5
-            
-            return rec6 
+            # Define thresholds based on location
+            threshold = 25 if location in ['Lagos', 'Abuja', 'Rivers'] else 15
 
-        #a condition to filter the dataframe based on the selected service category and frequency
-        if service_cat or frequency:
-            filtered_df = filter_df(available_df, service_cat, frequency)
+            # Check recommendations
+            recommendations = [rec1, rec2, rec3, rec4, rec5]
+            averages = [ave_for_rec_L1, ave_for_rec_L2, ave_for_rec_L3, ave_for_rec_L4, ave_for_rec_L5]
 
-        else:
-            filtered_df = available_df
+            for avg, rec in zip(averages, recommendations):
+                if avg <= threshold:
+                    return rec
+
+            # Default recommendation
+            return rec6     
+
+        filtered_df = available_df
 
         #another condition to filter the final table to be displayed based on the recommendation of the model for the provider
         #table to be displayed should contain the tariff level of the recommended level and a level below the recommended level
         if check_recommendation() == rec1:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_1', 'Tariff-L1(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_1', 'Tariff-L1(%)', 'TariffLevel']]
         elif check_recommendation() == rec2:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_1', 'Tariff-L1(%)','Level_2', 'Tariff-L2(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_1', 'Tariff-L1(%)','Level_2', 'Tariff-L2(%)', 'TariffLevel']]
         elif check_recommendation() == rec3:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_2', 'Tariff-L2(%)', 'Level_3', 'Tariff-L3(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_2', 'Tariff-L2(%)', 'Level_3', 'Tariff-L3(%)', 'TariffLevel']]
         elif check_recommendation() == rec4:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_3', 'Tariff-L3(%)', 'Level_4', 'Tariff-L4(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_3', 'Tariff-L3(%)', 'Level_4', 'Tariff-L4(%)', 'TariffLevel']]
         elif check_recommendation() == rec5:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_4', 'Tariff-L4(%)', 'Level_5', 'Tariff-L5(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_4', 'Tariff-L4(%)', 'Level_5', 'Tariff-L5(%)', 'TariffLevel']]
         elif check_recommendation() == rec6:
-            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'Frequency', 'ProviderTariff', 'Level_5', 'Tariff-L5(%)', 'TariffLevel']]
+            final_display_df = filtered_df[['CPTCode', 'Category', 'ProviderDescription','StandardDescription','Match_Score', 'ProviderTariff', 'Level_5', 'Tariff-L5(%)', 'TariffLevel']]
 
         #calculate the average variance of the provider tariff from the standard levels based on the selected service category and frequency
         ave_var_L1 = round(filtered_df['Tariff-L1(%)'].mean(),2)
@@ -325,7 +321,7 @@ if tariff_format == 'Mapped to CPT Codes':
         #display a title for the uploaded provider services and classification
         st.title(provider + ' Services Available on AVON STANDARD TARIFF')
         #display only certain columns based on the selected columns below
-        display_df = filtered_df[['CPTCode','Category', 'ProviderDescription','StandardDescription','Match_Score','Frequency','ProviderTariff','Level_1','Tariff-L1(%)','Level_2','Tariff-L2(%)', 'Level_3','Tariff-L3(%)', 'Level_4','Tariff-L4(%)', 'Level_5','Tariff-L5(%)', 'TariffLevel']]
+        display_df = filtered_df[['CPTCode','Category', 'ProviderDescription','StandardDescription','Match_Score','ProviderTariff','Level_1','Tariff-L1(%)','Level_2','Tariff-L2(%)', 'Level_3','Tariff-L3(%)', 'Level_4','Tariff-L4(%)', 'Level_5','Tariff-L5(%)', 'TariffLevel']]
         #display the final_display_df 
         st.write(final_display_df)
 
