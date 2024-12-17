@@ -115,8 +115,7 @@ def fuzzy_match(description, choices):
 
 #Include an input box that takes in the provider name
 provider = st.sidebar.text_input('Type in Provider Name')
-location = st.sidebar.selectbox('Provider Location', placeholder='Select Location', index=None,
-                         options=['Abia', 'Abuja', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River',
+location = st.sidebar.selectbox('Provider Location', placeholder='Select Location', index=None, options=['Abia', 'Abuja', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River',
                                    'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
                                     'Kebbi', 'Kogi', 'Kwara','Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
                                     'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'])
