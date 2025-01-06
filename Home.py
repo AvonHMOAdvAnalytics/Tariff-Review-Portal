@@ -115,7 +115,7 @@ def fuzzy_match(description, choices):
 
 #Include an input box that takes in the provider name
 provider = st.sidebar.text_input('Type in Provider Name')
-location = st.sidebar.selectbox('Provider Location', placeholder='Select Location', index=None, options=['Abia', 'Abuja', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 
+location = st.sidebar.selectbox('Provider Location*', placeholder='Select Location', index=None, options=['Abia', 'Abuja', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 
                                                                                                         'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
                                                                                                         'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara','Lagos', 'Nasarawa',
                                                                                                         'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
@@ -188,7 +188,7 @@ if tariff_format == 'Mapped to CPT Codes':
     uploaded_file = st.sidebar.file_uploader('Upload the Provider Tariff file already Mapped to CPT Codes here', type='csv')
 
     #set of instructions to be executed when a file is uploaded
-    if uploaded_file:
+    if location and uploaded_file:
 
         #include a select box on the sidebar that enables multiple selections to enable users to select multiple service category and frequency
         # service_cat = st.sidebar.multiselect('Select Service Category', ['DRUGS AND CONSUMABLES', 'CONSULTATIONS', 'INVESTIGATIONS', 'PROCEDURES', 'ROOMS AND FEEDING'])
@@ -357,7 +357,8 @@ if tariff_format == 'Mapped to CPT Codes':
         <div class='color-box'>{recommendation}</div>""",
         unsafe_allow_html=True,
     )
-
+    else:
+        st.error('Please select provider location to proceed')
 #set of instructions to be executed when 'Not Mapped to CPT Codes' is selected
 elif tariff_format == 'Not Mapped to CPT Codes':
     #add a file uploader        
