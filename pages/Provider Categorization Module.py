@@ -67,8 +67,6 @@ merged_provider_standard_tariff = merged_provider_standard_tariff[['ProviderClas
                                                                         'Match_Score', 'Amount', 'Level_1', 'Level_2', 'Level_3', 'Level_4', 'Level_5',
                                                                           'Tariff-L1%', 'Tariff-L2%', 'Tariff-L3%', 'Tariff-L4%', 'Tariff-L5%']]
 
-# st.write(merged_provider_standard_tariff.head(1000))
-
 #function to aggregate the dataframe on a provider-by-provider basis
 def aggregate_provider_tariff(providercategory, tariff_level):
     # Filter merged_provider_standard_tariff by based on the selected provider category
@@ -76,7 +74,8 @@ def aggregate_provider_tariff(providercategory, tariff_level):
     #add a new column that calculates the %variance of the provider tariff using the percent_change function from the selected tariff_level
     combined_data['Variance'] = round(percent_change(combined_data['Amount'], combined_data[tariff_level]), 2)
 
-# st.write(combined_data)
+    # extract the state for each provider
+    provider_state = combined_data[['ProviderName', 'State']].drop_duplicates()
 
     # Group  the combined data by 'ProviderName'
     grouped_data = combined_data.groupby(['ProviderName'])
@@ -96,26 +95,29 @@ def aggregate_provider_tariff(providercategory, tariff_level):
     combined_df = pd.merge(combined_df, df_L3, on='ProviderName')
     combined_df = pd.merge(combined_df, df_L4, on='ProviderName')
     combined_df = pd.merge(combined_df, df_L5, on='ProviderName')
+    combined_df = pd.merge(combined_df, provider_state, on='ProviderName', how='left')
 
 # Handle null values in combined_df
     combined_df = combined_df.fillna(0)
 
 #  function that makes the recommendation for each provider based on the defined logic in the conditional statement below
     def calculate_rec(row):
-        if row['L1_average'] <= 15:
+        special_state = ['LAGOS', 'ABUJA', 'RIVERS']
+        threshhold = 50 if row['State'] in special_state else 25
+        if row['L1_average'] <= threshhold:
             return 'Level 1'
-        elif row['L2_average'] <= 15:
+        elif row['L2_average'] <= threshhold:
             return 'Level 2'
-        elif row['L3_average'] <= 15:
+        elif row['L3_average'] <= threshhold:
             return 'Level 3'
-        elif row['L4_average'] <= 15:
+        elif row['L4_average'] <= threshhold:
             return 'Level 4'
         elif row['L5_average'] <= 100:
             return 'Level 5'
         else:
             return 'Level 6'
 
-    #create a new column in the combined_df by applying the function above for each provider
+#     #create a new column in the combined_df by applying the function above for each provider
     combined_df['Recommendation'] = combined_df.apply(calculate_rec, axis=1)
     #return only the selected columns below
     combined_df = combined_df[['ProviderName', 'L1_average', 'L2_average', 'L3_average', 'L4_average', 'L5_average', 'Recommendation']]
@@ -129,7 +131,7 @@ def calculate_rec(df, provider, location):
     based on variance thresholds and location-specific conditions.
     """
     # Thresholds based on location
-    location_threshold = 25 if location in ["LAGOS", "ABUJA", "RIVERS"] else 15
+    location_threshold = 50 if location in ["LAGOS", "ABUJA", "RIVERS"] else 25
     level_5_threshold = 100  # Additional condition for Level 5 before Level 6 categorization
 
     # Calculate the average variance for each tariff level
@@ -158,48 +160,63 @@ def calculate_rec(df, provider, location):
         for i in range(1, 6)
     }
 
-    # Logic to determine recommendation
-    for i in range(1, 6):
+       # Logic to determine recommendation for Levels 1–4
+    for i in range(1, 5):
         if variance_averages[f'L{i}_ave'] <= location_threshold:
             return table_df, recommendations[f'L{i}_rec']
     
-    # Special condition for Level 5: Check variance threshold for 100% before recommending Level 6
-    if variance_averages['L5_ave'] >= level_5_threshold:
+    # Handle Level 5 explicitly
+    if variance_averages['L5_ave'] <= level_5_threshold:
+        return table_df, recommendations['L5_rec']
+
+    # If Level 5 variance exceeds level_5_threshold, recommend Level 6
+    if variance_averages['L5_ave'] > level_5_threshold:
         rec_level_6 = (
             f"The Service Tariff of {provider} has a variance of {variance_averages['L5_ave']}% "
             "on LEVEL 5 and is hereby recommended to TARIFF LEVEL 6."
         )
         return table_df, rec_level_6
 
-    # Default recommendation if no level matches criteria
-    rec_default = (
-        f"The Service Tariff of {provider} has a variance that exceeds thresholds for "
-        "TARIFF LEVELS 1–5 and is hereby recommended to BUPA LEVEL."
+    # Fallback (should rarely happen now)
+    fallback_rec = (
+        f"The Service Tariff of {provider} does not meet any of the thresholds for recommendation "
+        "to a specific TARIFF LEVEL based on the current variance analysis."
     )
-    return table_df, rec_default
+    return table_df, fallback_rec
+
+
+    # # Default recommendation if no level matches criteria
+    # rec_default = (
+    #     f"The Service Tariff of {provider} has a variance that exceeds thresholds for "
+    #     "TARIFF LEVELS 1–5 and is hereby recommended to BUPA LEVEL."
+    # )
+    # return table_df, rec_default
 
 
 
 #apply the aggregate_provider_tariff function above to each category of providers and create a new column in the returned dataframe to indicate the provider category on TOSHFA
-basic_providers_df = aggregate_provider_tariff('LEVEL 1', 'Level_1')
-basic_providers_df['TOSHFA Level'] = 'BASIC'
-plus_providers_df = aggregate_provider_tariff('LEVEL 2', 'Level_2')
-plus_providers_df['TOSHFA Level'] = 'PLUS'
-premium_providers_df = aggregate_provider_tariff('LEVEL 3', 'Level_3')
-premium_providers_df['TOSHFA Level'] = 'PREMIUM'
-prestige_providers_df = aggregate_provider_tariff('LEVEL 4', 'Level_4')
-prestige_providers_df['TOSHFA Level'] = 'PRESTIGE'
-e_prestige_providers_df = aggregate_provider_tariff('LEVEL 5', 'Level_5')
-e_prestige_providers_df['TOSHFA Level'] = 'EXECUTIVE PRESTIGE'
+Level_1_providers_df = aggregate_provider_tariff('LEVEL 1', 'Level_1')
+Level_1_providers_df['TOSHFA Level'] = 'Level 1'
+Level_2_providers_df = aggregate_provider_tariff('LEVEL 2', 'Level_2')
+Level_2_providers_df['TOSHFA Level'] = 'Level 2'
+Level_3_providers_df = aggregate_provider_tariff('LEVEL 3', 'Level_3')
+Level_3_providers_df['TOSHFA Level'] = 'Level 3'
+Level_4_providers_df = aggregate_provider_tariff('LEVEL 4', 'Level_4')
+Level_4_providers_df['TOSHFA Level'] = 'Level 4'
+Level_5_providers_df = aggregate_provider_tariff('LEVEL 5', 'Level_5')
+Level_5_providers_df['TOSHFA Level'] = 'Level 5'
+Level_6_providers_df = aggregate_provider_tariff('LEVEL 6', 'Level_5')
+Level_6_providers_df['TOSHFA Level'] = 'Level 6'
+
 #combine all the providers in the different categories above to get a list with all the providers
-all_providers_df = pd.concat([basic_providers_df,plus_providers_df,premium_providers_df,prestige_providers_df,e_prestige_providers_df], axis=0)
+all_providers_df = pd.concat([Level_1_providers_df,Level_2_providers_df,Level_3_providers_df,Level_4_providers_df,Level_5_providers_df,Level_6_providers_df], axis=0)
 all_providers_df = all_providers_df[['ProviderName', 'TOSHFA Level', 'Recommendation']]
 # optical_providers_df = aggregate_provider_tariff_gp('Dental', 'Level_1')
 # optical_providers_df['TOSHFA Level'] = 'BASIC'
-
+# st.write(all_providers_df[['Recommendation'] == 'Level 1'].reset_index(drop=True))
 #this function adds a filter to the sidebar to enable us filter the final displayed categorisation by the model based on their recommended tariff level
 def display_data(df):
-    tariff_level = st.sidebar.selectbox(label='Recommended Tariff Level', options=['All', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'BUPA Level'])
+    tariff_level = st.sidebar.selectbox(label='Recommended Tariff Level', options=['All', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'])
     if tariff_level == 'All':
         data = df
     elif tariff_level == 'Level 1':
@@ -212,8 +229,8 @@ def display_data(df):
         data = df[df['Recommendation'] == 'Level 4'].reset_index(drop=True)
     elif tariff_level == 'Level 5':
         data = df[df['Recommendation'] == 'Level 5'].reset_index(drop=True)
-    elif tariff_level == 'BUPA Level':
-        data = df[df['Recommendation'] == 'BUPA Level'].reset_index(drop=True)
+    elif tariff_level == 'Level 6':
+        data = df[df['Recommendation'] == 'Level 6'].reset_index(drop=True)
     return data
 
 # Define a function to apply custom styling
@@ -279,6 +296,9 @@ def display_provider_data(provider_class, provider_df, unique_providers):
     selected_provider_df = selected_provider_df[['Category', 'CPTCode', 'ProviderServiceDesc', 'StandardServiceDesc', 'Match_Score', 'Amount',
                                                  'Level_1', 'Tariff-L1%', 'Level_2', 'Tariff-L2%', 'Level_3', 'Tariff-L3%', 'Level_4',
                                                  'Tariff-L4%', 'Level_5', 'Tariff-L5%']]
+    #drop duplicates from selected_provider_df
+    selected_provider_df = selected_provider_df.drop_duplicates(subset=['CPTCode', 'ProviderServiceDesc']).reset_index(drop=True)
+    
     var_df, rec = calculate_rec(selected_provider_df, provider, location)
     
     st.subheader(f'Service Tariff Table for {provider}')
@@ -294,7 +314,7 @@ if select_task == 'Check Provider Classification':
     # Sidebar to select provider class
     provider_class = st.sidebar.selectbox(
         label='Select Current Provider Class', 
-        options=['ALL', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+        options=['ALL', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6']
     )
     
     # Filter the provider dataset based on the selected class
@@ -302,7 +322,7 @@ if select_task == 'Check Provider Classification':
         provider_df = display_data(all_providers_df)
         unique_providers = merged_provider_standard_tariff['ProviderName'].unique()
     else:
-        provider_df = display_data(eval(f"{provider_class.lower().replace(' ', '_')}_providers_df"))
+        provider_df = display_data(eval(f"{provider_class.replace(' ', '_')}_providers_df"))
         unique_providers = merged_provider_standard_tariff.loc[
             merged_provider_standard_tariff['ProviderClass'] == provider_class.upper(), 
             'ProviderName'

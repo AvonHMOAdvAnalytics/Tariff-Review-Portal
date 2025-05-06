@@ -275,13 +275,13 @@ if tariff_format == 'Mapped to CPT Codes':
         rec3 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L3}% from Standard LEVEL 3 Tariff and is hereby recommended to TARIFF LEVEL 3'
         rec4 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L4}% from Standard LEVEL 4 Tariff and is hereby recommended to TARIFF LEVEL 4'
         rec5 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L5}% from Standard LEVEL 5 Tariff and is hereby recommended to TARIFF LEVEL 5'
-        rec6 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L5}% from Standard LEVEL 5 Tariff and is hereby recommended to BUPA LEVEL'
+        rec6 = f'The Service Tariff of {provider} has a variance of {ave_for_rec_L5}% from Standard LEVEL 5 Tariff and is hereby recommended to TARIFF LEVEL 6'
         
 
         #a function to assign a recommendation to the uploaded provider based on our logic and return the recommendation.
         def check_recommendation():
             # Define thresholds based on location
-            threshold = 25 if location in ['Lagos', 'Abuja', 'Rivers'] else 15
+            threshold = 50 if location in ['Lagos', 'Abuja', 'Rivers'] else 25
 
             # Check recommendations
             recommendations = [rec1, rec2, rec3, rec4, rec5]
